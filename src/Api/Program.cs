@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<JobDbContext>(options =>
-    options.UseSqlite("Data Source=jobs.db"));
+    options.UseSqlite("Data Source=../jobs.db"));
 
 builder.Services.AddScoped<IJobRepository, SqliteJobRepository>();
 builder.Services.AddScoped<JobService>();
