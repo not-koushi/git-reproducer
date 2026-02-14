@@ -4,7 +4,9 @@ using Workers;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-// IMPORTANT: same database file as API
+// silence EF SQL spam
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+
 builder.Services.AddDbContext<JobDbContext>(options =>
     options.UseSqlite("Data Source=../jobs.db"));
 
