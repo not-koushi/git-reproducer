@@ -1,11 +1,17 @@
 using Application.Abstractions;
-using Infrastructure.Queues;
 using Application.Services;
 using Application.Contracts;
+using Application.Abstractions;
 using Infrastructure.Persistence;
+using Infrastructure.Queues;
+using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddScoped<IJobRepository, SqliteJobRepository>();
+
+builder.Services.AddScoped<JobService>();
 
 builder.Services.AddSingleton<IJobQueue, InMemoryJobQueue>();
 
