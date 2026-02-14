@@ -23,4 +23,10 @@ app.MapPost("/jobs", async (CreateJobRequest request, JobService service) =>
     return Results.Ok(job);
 });
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<JobDbContext>();
+    db.Database.Migrate();
+}
+
 app.Run();
