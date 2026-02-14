@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using Application.Abstractions;
 using Application.Contracts;
 using Domain;
@@ -7,22 +6,21 @@ namespace Application.Services;
 
 public class JobService
 {
-    private readonly IJobQueue _queue;
+    private readonly IJobRepository _repo;
 
-    public JobService(IJobQueue queue)
+    public JobService(IJobRepository repo)
     {
-        _queue = queue;
+        _repo = repo;
     }
 
-    public ReproductionJob Create(CreateJobRequest request)
+    public async Task<ReproductionJob> CreateAsync(CreateJobRequest request)
     {
         var job = new ReproductionJob
         {
-          RepositoryUrl = request.RepositoryUrl,
-          Status = JobStatus.Pending  
+            RepositoryUrl = request.RepositoryUrl,
+            Status = JobStatus.Pending
         };
 
-        _queue.Enqueue(job);
-        return job; 
+        return await _repo.AddAsync(job);
     }
 }
