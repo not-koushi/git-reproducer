@@ -1,32 +1,25 @@
 using Application.Abstractions;
-using Application.Services;
 using Application.Contracts;
-using Application.Abstractions;
+using Application.Services;
 using Infrastructure.Persistence;
-using Infrastructure.Queues;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddScoped<IJobRepository, SqliteJobRepository>();
-
-builder.Services.AddScoped<JobService>();
-
-builder.Services.AddSingleton<IJobQueue, InMemoryJobQueue>();
-
-builder.Services.AddSingleton<JobService>();
-
 builder.Services.AddDbContext<JobDbContext>(options =>
-    options.UseSqlite("Data source = jobs.db"));
+    options.UseSqlite("Data Source=jobs.db"));
+
+builder.Services.AddScoped<IJobRepository, SqliteJobRepository>();
+builder.Services.AddScoped<JobService>();
 
 var app = builder.Build();
 
 app.MapGet("/", () => "Git Reproducer API running");
 
-app.MapPost("/jobs", (CreateJobRequest request, JobService service) =>
+app.MapPost("/jobs", async (CreateJobRequest request, JobService service) =>
 {
-    var job = service.Create(request);
+    var job = await service.CreateAsync(request);
     return Results.Ok(job);
 });
 
