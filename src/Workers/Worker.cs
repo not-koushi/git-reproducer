@@ -1,4 +1,5 @@
 using Domain;
+using Infrastructure.Execution;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -38,14 +39,24 @@ public class Worker : BackgroundService
             job.Status = JobStatus.Cloning;
             await db.SaveChangesAsync(stoppingToken);
 
-            _logger.LogInformation("Processing repo: {Repo}", job.RepositoryUrl);
+            _logger.LogInformation("Cloning repo: {Repo}", job.RepositoryUrl);
 
-            await Task.Delay(3000, stoppingToken);
+            var workspace = Path.GetFullPath(Path.Combine("..","workspaces", job.Id.ToString()));
+            Directory.CreateDirectory(workspace);
 
-            job.Status = JobStatus.Completed;
+            var (code, logs) = await ProcessRunner.RunAsync(
+                "git",
+                $"clone {job.RepositoryUrl} .",
+                workspace,
+                stoppingToken
+            );
+
+            job.Logs = logs;
+            job.Status = code == 0 ? JobStatus.Completed : JobStatus.Failed;
+
             await db.SaveChangesAsync(stoppingToken);
 
-            _logger.LogInformation("Finished job: {Id}", job.Id);
+            _logger.LogInformation("Finished job: {Id} (exit {Code})", job.Id, code);
         }
     }
 }
