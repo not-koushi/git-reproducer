@@ -2,11 +2,17 @@ $api = Start-Process powershell -ArgumentList "-NoExit", "-Command", "dotnet run
 Start-Sleep -Seconds 2 
 $worker = Start-Process powershell -ArgumentList "-NoExit", "-Command", "dotnet run --no-build --project .\src\Workers\" -PassThru
 
-Register-EngineEvent PowerShell.Exiting -Action {
-    Write-Host "`nShutting down services..." -ForegroundColor Yellow
-    $api | Stop-Process -Force -ErrorAction SilentlyContinue
-    $worker | Stop-Process -Force -ErrorAction SilentlyContinue
-} | Out-Null
+function Stop-Services {
+    Write-Host "`nStopping API and Worker..." -ForegroundColor Yellow
+
+    if ($api -and !$api.HasExited) {
+        Stop-Process -Id $api.Id -Force -ErrorAction SilentlyContinue
+    }
+
+    if ($worker -and !$worker.HasExited) {
+        Stop-Process -Id $worker.Id -Force -ErrorAction SilentlyContinue
+    }
+}
 
 function Resolve-RepoUrl($repo)
 {
@@ -54,16 +60,19 @@ function Get-JobResult($jobId)
     Write-Host ""
 }
 
-Write-Host "+-----------------------+"
+Write-Host "+-----------------------+" -ForegroundColor Cyan
 Write-Host "| GIT REPRODUCER CLIENT |" -ForegroundColor Cyan
-Write-Host "+-----------------------+"
+Write-Host "+-----------------------+" -ForegroundColor Cyan
 
 while ($true)
 {
     Write-Host ""
     $repo = Read-Host "Enter repository URL (or type exit)"
 
-    if ($repo -eq "exit") { break }
+    if ($repo -eq "exit") {
+        Stop-Services
+        exit
+    }
 
     $repo = Resolve-RepoUrl $repo
 
@@ -88,7 +97,11 @@ while ($true)
         $inputText = Read-Host ">"
 
         if ($inputText -eq "/url") { break }
-        if ($inputText -eq "exit") { return }
+
+        if ($inputText -eq "exit") {
+            Stop-Services
+            exit
+        }
 
         if ($inputText -match "^id:(.+)$")
         {
