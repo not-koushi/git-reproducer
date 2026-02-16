@@ -46,7 +46,7 @@ public class Worker : BackgroundService
 
             var (code, logs) = await ProcessRunner.RunAsync(
                 "git",
-                $"clone {job.RepositoryUrl} .",
+                $"clone --depth 1 --single-branch --no-tags {job.RepositoryUrl} .",
                 workspace,
                 stoppingToken
             );
