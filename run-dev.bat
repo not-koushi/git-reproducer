@@ -10,17 +10,17 @@ if %errorlevel% neq 0 (
 )
 
 echo Starting API...
-start "API" cmd /k dotnet run --no-build --project src\Api
+start "API" powershell -NoExit -Command "dotnet run --no-build --project src/Api"
 
 timeout /t 2 > nul
 
 echo Starting Worker...
-start "Worker" cmd /k dotnet run --no-build --project src\Workers
+start "Worker" powershell -NoExit -Command "dotnet run --no-build --project src/Workers"
 
 timeout /t 2 > nul
 
 echo Opening Test Terminal...
-start "Test Client" cmd
+start "Test Client" powershell -NoExit
 
 echo.
 echo ======================================
