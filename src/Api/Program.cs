@@ -29,4 +29,10 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
+app.MapGet("/jobs/{id:guid}", async (Guid id, JobService service) =>
+{
+   var job = await service.GetAsync(id);
+   return job is null ? Results.NotFound() : Results.Ok(job); 
+});
+
 app.Run();
