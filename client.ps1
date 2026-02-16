@@ -1,8 +1,23 @@
 Write-Host ""
-Write-Host "=== Git Reproducer Client ===" -ForegroundColor Cyan
+Write-Host "+-----------------------+"
+Write-Host "| GIT REPRODUCER CLIENT |" -ForegroundColor Cyan
+Write-Host "+-----------------------+"
 Write-Host ""
 
 $repo = Read-Host "Enter repository URL"
+
+# normalize input
+if ($repo -notmatch "^https?://")
+{
+    if ($repo -match "^[^/]+/[^/]+$")
+    {
+        $repo = "https://github.com/$repo"
+    }
+    elseif ($repo -match "^github\.com/")
+    {
+        $repo = "https://$repo"
+    }
+}
 
 Write-Host "`nCreating job..."
 $response = Invoke-RestMethod `
@@ -15,7 +30,7 @@ Write-Host ""
 Write-Host "Job created!" -ForegroundColor Green
 Write-Host "ID:" $response.id
 Write-Host ""
-Write-Host "Type id:<job-id> to fetch result (example: id:$($response.id))"
+Write-Host "Type id:<job-id> to fetch result"
 Write-Host ""
 
 while ($true)
