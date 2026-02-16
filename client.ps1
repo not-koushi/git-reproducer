@@ -1,7 +1,5 @@
 Write-Host ""
-Write-Host "+-----------------------+"
-Write-Host "| GIT REPRODUCER CLIENT |" -ForegroundColor Cyan
-Write-Host "+-----------------------+"
+Write-Host "=== Git Reproducer Client ===" -ForegroundColor Cyan
 Write-Host ""
 
 $repo = Read-Host "Enter repository URL"
@@ -19,7 +17,7 @@ if ($repo -notmatch "^https?://")
     }
 }
 
-Write-Host "`nCreating job..."
+Write-Host "`nCreating job..." -ForegroundColor Cyan
 $response = Invoke-RestMethod `
     -Method Post `
     -Uri "http://localhost:5000/jobs" `
@@ -28,9 +26,9 @@ $response = Invoke-RestMethod `
 
 Write-Host ""
 Write-Host "Job created!" -ForegroundColor Green
-Write-Host "ID:" $response.id
+Write-Host "ID:" $response.id -ForegroundColor Yellow
 Write-Host ""
-Write-Host "Type id:<job-id> to fetch result"
+Write-Host "Type id:<jobid> to fetch result"
 Write-Host ""
 
 while ($true)
@@ -41,18 +39,34 @@ while ($true)
     {
         $jobId = $Matches[1]
 
-        Write-Host "`nFetching job result..."
+        Write-Host "`nFetching job result..." -ForegroundColor Cyan
+
         try {
             $job = Invoke-RestMethod "http://localhost:5000/jobs/$jobId"
 
+            # colored status
+            if ($job.statusText -eq "Completed") {
+                Write-Host "Status: $($job.statusText)" -ForegroundColor Green
+            }
+            elseif ($job.statusText -eq "Failed") {
+                Write-Host "Status: $($job.statusText)" -ForegroundColor Red
+            }
+            else {
+                Write-Host "Status: $($job.statusText)" -ForegroundColor Yellow
+            }
+
             Write-Host ""
-            Write-Host "Status: " $job.statusText -ForegroundColor Yellow
-            Write-Host "----------------------------------------"
-            Write-Host $job.logs
-            Write-Host "----------------------------------------"
+
+            # replace '.' with actual workspace path
+            $workspacePath = ".\src\workspaces\$jobId"
+            $logs = $job.logs -replace "Cloning into '\.'", "Cloning into `"$workspacePath`""
+
+            Write-Host $logs -ForegroundColor Gray
         }
-        catch{
+        catch {
             Write-Host "Job not found." -ForegroundColor Red
         }
+
+        Write-Host ""
     }
 }
