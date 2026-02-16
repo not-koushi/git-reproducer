@@ -20,7 +20,7 @@ start "Worker" powershell -NoExit -Command "dotnet run --no-build --project src/
 timeout /t 2 > nul
 
 echo Opening Test Terminal...
-start "Test Client" powershell -NoExit
+start "Client" powershell -NoExit -ExecutionPolicy Bypass -File client.ps1
 
 echo.
 echo ======================================
