@@ -23,4 +23,9 @@ public class JobService
 
         return await _repo.AddAsync(job);
     }
+
+    public Task<ReproductionJob?> GetAsync(Guid id)
+    {
+        return _repo.GetAsync(id);
+    }
 }
