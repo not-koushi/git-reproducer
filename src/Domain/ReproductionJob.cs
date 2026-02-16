@@ -19,4 +19,5 @@ public class ReproductionJob
     public JobStatus Status { get; set; } = JobStatus.Pending;
     public string Logs { get; set; } = "";
     public DateTime CreatedAt { get; set;} = DateTime.UtcNow;
+    public string StatusText => Status.ToString();
 }
