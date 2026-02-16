@@ -1,3 +1,13 @@
+$api = Start-Process powershell -ArgumentList "-NoExit", "-Command", "dotnet run --no-build --project .\src\Api\" -PassThru
+Start-Sleep -Seconds 2 
+$worker = Start-Process powershell -ArgumentList "-NoExit", "-Command", "dotnet run --no-build --project .\src\Workers\" -PassThru
+
+Register-EngineEvent PowerShell.Exiting -Action {
+    Write-Host "`nShutting down services..." -ForegroundColor Yellow
+    $api | Stop-Process -Force -ErrorAction SilentlyContinue
+    $worker | Stop-Process -Force -ErrorAction SilentlyContinue
+} | Out-Null
+
 function Resolve-RepoUrl($repo)
 {
     if ($repo -notmatch "^https?://")
