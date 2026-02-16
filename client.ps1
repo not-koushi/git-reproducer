@@ -1,16 +1,16 @@
-$api = Start-Process powershell -ArgumentList "-NoExit", "-Command", "dotnet run --no-build --project .\src\Api\" -PassThru
+$api = Start-Process powershell -ArgumentList "-NoExit", "-Command", "$Host.UI.RawUI.WindowTitle='GitReproducer API'; dotnet run --no-build --project .\src\Api\" -PassThru
 Start-Sleep -Seconds 2 
-$worker = Start-Process powershell -ArgumentList "-NoExit", "-Command", "dotnet run --no-build --project .\src\Workers\" -PassThru
+$worker = Start-Process powershell -ArgumentList "-NoExit", "-Command", "$Host.UI.RawUI.WindowTitle='GitReproducer Worker'; dotnet run --no-build --project .\src\Workers\" -PassThru
 
 function Stop-Services {
     Write-Host "`nStopping API and Worker..." -ForegroundColor Yellow
 
     if ($api -and !$api.HasExited) {
-        Stop-Process -Id $api.Id -Force -ErrorAction SilentlyContinue
+        cmd /c "taskkill /PID $($api.Id) /T /F" | Out-Null
     }
 
     if ($worker -and !$worker.HasExited) {
-        Stop-Process -Id $worker.Id -Force -ErrorAction SilentlyContinue
+        cmd /c "taskkill /PID $($worker.Id) /T /F" | Out-Null
     }
 }
 
