@@ -14,6 +14,19 @@ function Stop-Services {
     }
 }
 
+function Read-Command($prompt)
+{
+    $input = Read-Host $prompt
+
+    if ($input -eq "/exit")
+    {
+        Stop-Services
+        exit
+    }
+
+    return $input
+}
+
 function Resolve-RepoUrl($repo)
 {
     if ($repo -notmatch "^https?://")
@@ -88,7 +101,7 @@ function New-JobFlow {
 
     while ($true)
     {
-        $repo = Read-Host "Enter repository URL"
+        $repo = Read-Command "Enter repository URL"
 
         if (-not (Test-GitHubRepoFormat $repo))
         {
@@ -125,7 +138,7 @@ function New-JobFlow {
 }
 
 function Get-JobFlow {
-    $jobId = Read-Host "Enter job id"
+    $jobId = Read-Command "Enter job id"
     Get-JobResult $jobId
 }
 
@@ -137,7 +150,7 @@ while ($true)
 {
     Write-Host ""
     Write-Host "Commands: /url  /id  /exit" -ForegroundColor Cyan
-    $cmd = Read-Host ">"
+    $cmd = Read-Command ">"
 
     switch ($cmd)
     {
