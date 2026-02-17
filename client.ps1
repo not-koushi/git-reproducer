@@ -30,6 +30,19 @@ function Resolve-RepoUrl($repo)
     return $repo
 }
 
+function Test-GitHubRepoFormat($repo)
+{
+    if ($repo -match "^(https://github\.com/)?[^/\s]+/[^/\s]+/?$")
+    {
+        return $true
+    }
+    if ($repo -match "^github\.com/[^/\s]+/[^/\s]+/?$")
+    {
+        return $true
+    }
+    return false
+}
+
 function Get-JobResult($jobId)
 {
     Write-Host "`nFetching job result..." -ForegroundColor Cyan
@@ -60,9 +73,22 @@ function Get-JobResult($jobId)
     Write-Host ""
 }
 
-function Create-JobFlow {
-    $repo = Read-Host "Enter repository URL"
-    $repo = Resolve-RepoUrl $repo
+function New-JobFlow {
+
+    while ($true)
+    {
+        $repo = Read-Host "Enter repository URL"
+
+        if (-not (Test-GitHubRepoFormat $repo))
+        {
+            Write-Host "Invalid GitHub repository format." -ForegroundColor Red
+            Write-Host "Examples: user/repo  |  github.com/user/repo  |  https://github.com/user/repo"
+            continue
+        }
+
+        $repo = Resolve-RepoUrl $repo
+        break
+    }
 
     Write-Host "`nCreating job..." -ForegroundColor Cyan
 
@@ -78,7 +104,7 @@ function Create-JobFlow {
     Write-Host ""
 }
 
-function Fetch-JobFlow {
+function Get-JobFlow {
     $jobId = Read-Host "Enter job id"
     Get-JobResult $jobId
 }
@@ -95,8 +121,8 @@ while ($true)
 
     switch ($cmd)
     {
-        "/url"  { Create-JobFlow }
-        "/id"   { Fetch-JobFlow }
+        "/url"  { New-JobFlow }
+        "/id"   { Get-JobFlow }
         "/exit" { Stop-Services; exit }
         default { Write-Host "Unknown command." -ForegroundColor DarkYellow }
     }
