@@ -46,9 +46,8 @@ function Test-GitHubRepoFormat($repo)
 function Test-GitHubRepoExists($repoUrl)
 {
     try {
-        $uri = $repoUrl -replace "https://github.com/", "https://api/github.com/repos/"
-        Invoke-RestMethod -Uri $uri -Headers @{ "User-Agent" = "GRProd" } -Method Get -TimeoutSec 5 | Out-Null
-        return $true
+        $null = git ls-remote $repoUrl 2>$null
+        return ($LASTEXITCODE -eq 0)
     }
     catch {
         return $false
