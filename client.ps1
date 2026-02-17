@@ -46,7 +46,7 @@ function Test-GitHubRepoFormat($repo)
 function Test-GitHubRepoExists($repoUrl)
 {
     try {
-        $null = git ls-remote $repoUrl 2>$null
+        git ls-remote $repoUrl 2>$null | Out-Null
         return ($LASTEXITCODE -eq 0)
     }
     catch {
