@@ -40,7 +40,7 @@ function Test-GitHubRepoFormat($repo)
     {
         return $true
     }
-    return false
+    return $false
 }
 
 function Test-GitHubRepoExists($repoUrl)
