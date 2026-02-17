@@ -96,11 +96,31 @@ public class Worker : BackgroundService
             job.Logs += "\n--- RESTORE ---\n" + restoreLogs;
             job.Logs += "\n--- BUILD ---\n" +buildLogs;
 
-            job.Status = buildCode == 0 ? JobStatus.Completed : JobStatus.Failed;
+            if (buildCode != 0)
+            {
+                job.Status = JobStatus.Failed;
+                await db.SaveChangesAsync(stoppingToken);
+                _logger.LogInformation("Build failed: {Id}", job.Id);
+                continue;
+            }
 
+            job.Status = JobStatus.Testing;
             await db.SaveChangesAsync(stoppingToken);
 
-            _logger.LogInformation("Build finished: {Id} (exit {Code})", job.Id, buildCode);
+            _logger.LogInformation("Running test: {Id}", job.Id);
+
+            var (testCode, testLogs) = await ProcessRunner.RunAsync(
+                "dotnet",
+                "test --no-build --verbosity normal",
+                workspace,
+                stoppingToken
+            );
+
+            job.Logs += "\n--- TEST ---\n" + testLogs;
+            job.Status = testCode == 0 ? JobStatus.Completed : JobStatus.Failed;
+            await db.SaveChangesAsync(stoppingToken);
+
+            _logger.LogInformation("Tests finished: {ID} (exit {Code})", job.Id, testCode);
         }
     }
 }
