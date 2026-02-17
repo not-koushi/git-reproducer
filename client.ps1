@@ -43,6 +43,18 @@ function Test-GitHubRepoFormat($repo)
     return false
 }
 
+function Test-GitRepoExists($repoUrl)
+{
+    try {
+        $uri = $repoUrl -replace "https://github.com/", "https://api/github.com/repos/"
+        Invoke-RestMethod -Uri $uri -Headers @{ "User-Agent" = "GRProd" } -Method Get -TimeoutSec 5 | Out-Null
+        return $true
+    }
+    catch {
+        return $false
+    }
+}
+
 function Get-JobResult($jobId)
 {
     Write-Host "`nFetching job result..." -ForegroundColor Cyan
@@ -82,13 +94,22 @@ function New-JobFlow {
         if (-not (Test-GitHubRepoFormat $repo))
         {
             Write-Host "Invalid GitHub repository format." -ForegroundColor Red
-            Write-Host "Examples: user/repo  |  github.com/user/repo  |  https://github.com/user/repo"
             continue
         }
 
         $repo = Resolve-RepoUrl $repo
+
+        Write-Host "Checking repository..." -ForegroundColor DarkCyan
+
+        if (-not (Test-GitHubRepoExists $repo))
+        {
+            Write-Host "Repository not found on GitHub." -ForegroundColor Red
+            continue
+        }
+
         break
     }
+
 
     Write-Host "`nCreating job..." -ForegroundColor Cyan
 
