@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Domain;
 using Infrastructure.Execution;
 using Infrastructure.Persistence;
@@ -52,11 +53,54 @@ public class Worker : BackgroundService
             );
 
             job.Logs = logs;
-            job.Status = code == 0 ? JobStatus.Completed : JobStatus.Failed;
+            
+            if (code != 0)
+            {
+                job.Status = JobStatus.Failed;
+                await db.SaveChangesAsync(stoppingToken);
+                _logger.LogInformation("Clone failed: {Id}", job.Id);
+                continue;
+            }
+
+            var hasDotnetProject =
+                Directory.GetFiles(workspace, "*.sln", SearchOption.AllDirectories).Any() ||
+                Directory.GetFiles(workspace, "*.csproj", SearchOption.AllDirectories).Any();
+
+            if (!hasDotnetProject)
+            {
+                job.Status = JobStatus.Completed;
+                await db.SaveChangesAsync(stoppingToken);
+                _logger.LogInformation("No .NET project detected: {Id}", job.Id);
+                continue;
+            }
+
+            job.Status = JobStatus.Building;
+            await db.SaveChangesAsync(stoppingToken);
+
+            _logger.LogInformation("Building .NET project: {Id}", job.Id);
+
+            var (restoreCode, restoreLogs) = await ProcessRunner.RunAsync(
+                "dotnet",
+                "restore",
+                workspace,
+                stoppingToken
+            );
+
+            var (buildCode, buildLogs) = await ProcessRunner.RunAsync(
+                "dotnet",
+                "build --no-restore",
+                workspace,
+                stoppingToken
+            );
+
+            job.Logs += "\n--- RESTORE ---\n" + restoreLogs;
+            job.Logs += "\n--- BUILD ---\n" +buildLogs;
+
+            job.Status = buildCode == 0 ? JobStatus.Completed : JobStatus.Failed;
 
             await db.SaveChangesAsync(stoppingToken);
 
-            _logger.LogInformation("Finished job: {Id} (exit {Code})", job.Id, code);
+            _logger.LogInformation("Build finished: {Id} (exit {Code})", job.Id, buildCode);
         }
     }
 }
