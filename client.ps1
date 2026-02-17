@@ -60,20 +60,8 @@ function Get-JobResult($jobId)
     Write-Host ""
 }
 
-Write-Host "+-----------------------+" -ForegroundColor Cyan
-Write-Host "| GIT REPRODUCER CLIENT |" -ForegroundColor Cyan
-Write-Host "+-----------------------+" -ForegroundColor Cyan
-
-while ($true)
-{
-    Write-Host ""
-    $repo = Read-Host "Enter repository URL (or type exit)"
-
-    if ($repo -eq "exit") {
-        Stop-Services
-        exit
-    }
-
+function Create-JobFlow {
+    $repo = Read-Host "Enter repository URL"
     $repo = Resolve-RepoUrl $repo
 
     Write-Host "`nCreating job..." -ForegroundColor Cyan
@@ -84,28 +72,32 @@ while ($true)
         -ContentType "application/json" `
         -Body (@{ repositoryUrl = $repo } | ConvertTo-Json)
 
-    $jobId = $response.id
-
     Write-Host ""
     Write-Host "Job created!" -ForegroundColor Green
-    Write-Host "ID:" $jobId -ForegroundColor Yellow
-    Write-Host "Commands: id:<jobid> | /url | exit"
-    
-    # job mode
-    while ($true)
+    Write-Host "ID:" $response.id -ForegroundColor Yellow
+    Write-Host ""
+}
+
+function Fetch-JobFlow {
+    $jobId = Read-Host "Enter job id"
+    Get-JobResult $jobId
+}
+
+Write-Host "+-----------------------+" -ForegroundColor Cyan
+Write-Host "| GIT REPRODUCER CLIENT |" -ForegroundColor Cyan
+Write-Host "+-----------------------+" -ForegroundColor Cyan
+
+while ($true)
+{
+    Write-Host ""
+    Write-Host "Commands: /url  /id  /exit" -ForegroundColor Cyan
+    $cmd = Read-Host ">"
+
+    switch ($cmd)
     {
-        $inputText = Read-Host ">"
-
-        if ($inputText -eq "/url") { break }
-
-        if ($inputText -eq "exit") {
-            Stop-Services
-            exit
-        }
-
-        if ($inputText -match "^id:(.+)$")
-        {
-            Get-JobResult $Matches[1]
-        }
+        "/url"  { Create-JobFlow }
+        "/id"   { Fetch-JobFlow }
+        "/exit" { Stop-Services; exit }
+        default { Write-Host "Unknown command." -ForegroundColor DarkYellow }
     }
 }
