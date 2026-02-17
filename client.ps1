@@ -43,7 +43,7 @@ function Test-GitHubRepoFormat($repo)
     return false
 }
 
-function Test-GitRepoExists($repoUrl)
+function Test-GitHubRepoExists($repoUrl)
 {
     try {
         $uri = $repoUrl -replace "https://github.com/", "https://api/github.com/repos/"
