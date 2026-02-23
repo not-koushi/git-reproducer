@@ -16,15 +16,15 @@ function Stop-Services {
 
 function Read-Command($prompt)
 {
-    $input = Read-Host $prompt
+    $inputx = Read-Host $prompt
 
-    if ($input -eq "/exit")
+    if ($inputx -eq "/exit")
     {
         Stop-Services
         exit
     }
 
-    return $input
+    return $inputx
 }
 
 function Resolve-RepoUrl($repo)
