@@ -3,6 +3,7 @@ using Domain;
 using Infrastructure.Execution;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Infrastructure.Parsing;
 
 namespace Workers;
 
@@ -117,6 +118,13 @@ public class Worker : BackgroundService
             );
 
             job.Logs += "\n--- TEST ---\n" + testLogs;
+
+            var summary = DotnetTestParser.ExtractFailure(testLogs);
+            if (summary is not null)
+            {
+                job.FailureSummary = summary;
+            }
+
             job.Status = testCode == 0 ? JobStatus.Completed : JobStatus.Failed;
             await db.SaveChangesAsync(stoppingToken);
 
