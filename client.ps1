@@ -84,6 +84,13 @@ function Get-JobResult($jobId)
             Write-Host "Status: $($job.statusText)" -ForegroundColor Yellow
         }
 
+        if ($job.failureSummary)
+        {
+            Write-Host ""
+            Write-Host "Reproduction Summary:" -ForegroundColor Magenta
+            Write-Host $job.failureSummary
+        }
+
         $workspacePath = ".\src\workspaces\$jobId"
         $logs = $job.logs -replace "Cloning into '\.'", "Cloning into `"$workspacePath`""
 
