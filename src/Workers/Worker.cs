@@ -88,12 +88,13 @@ public class Worker : BackgroundService
 
             _logger.LogInformation("Building .NET project: {Id}", job.Id);
 
-            var (restoreCode, restoreLogs, restoreTimedOut) = await ProcessRunner.RunAsync(
-                "dotnet",
-                "restore",
+            var (restoreCode, restoreLogs) = await DockerRunner.RunAsync(
                 workspace,
+                "dotnet restore",
                 stoppingToken
             );
+
+            var restoreTimedOut = false,
 
             if (restoreTimedOut)
             {
@@ -103,12 +104,13 @@ public class Worker : BackgroundService
                 continue;
             }
 
-            var (buildCode, buildLogs, buildTimedOut) = await ProcessRunner.RunAsync(
-                "dotnet",
-                "build --no-restore",
+            var (buildCode, buildLogs) = await DockerRunner.RunAsync(
                 workspace,
+                "dotnet build --no-restore",
                 stoppingToken
             );
+
+            var buildTimedOut = false;
 
             if (buildTimedOut)
             {
@@ -134,12 +136,13 @@ public class Worker : BackgroundService
 
             _logger.LogInformation("Running tests: {Id}", job.Id);
 
-            var (testCode, testLogs, testTimedOut) = await ProcessRunner.RunAsync(
-                "dotnet",
-                "test --no-build --verbosity normal",
+            var (testCode, testLogs) = await DockerRunner.RunAsync(
                 workspace,
+                "dotnet test --no-build --verbosity normal",
                 stoppingToken
             );
+
+            var testTimedOut = false;
 
             if (testTimedOut)
             {
