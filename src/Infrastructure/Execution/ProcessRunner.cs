@@ -5,7 +5,7 @@ namespace Infrastructure.Execution;
 
 public static class ProcessRunner
 {
-    public static async Task<(int ExitCode, string Output)> RunAsync(
+    public static async Task<(int ExitCode, string Output, bool TimedOut)> RunAsync(
         string file,
         string args,
         string workingDir,
@@ -40,8 +40,26 @@ public static class ProcessRunner
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
-        await process.WaitForExitAsync(ct);
+        var timeout = TimeSpan.FromMinutes(2);
 
-        return (process.ExitCode, output.ToString());
+        var waitTask = process.WaitForExitAsync(ct);
+
+        var completedTask = await Task.WhenAny(
+            waitTask,
+            Task.Delay(timeout, ct)
+        );
+
+        if (completedTask != waitTask)
+        {
+            try
+            {
+                process.Kill(true);
+            }
+            catch { }
+
+            return (-1, output.ToString(), true);
+        }
+
+        return (process.ExitCode, output.ToString(), false);
     }
 }
