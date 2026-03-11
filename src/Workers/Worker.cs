@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Domain;
 using Infrastructure.Execution;
 using Infrastructure.Persistence;
@@ -43,10 +42,10 @@ public class Worker : BackgroundService
 
             _logger.LogInformation("Cloning repo: {Repo}", job.RepositoryUrl);
 
-            var workspace = Path.GetFullPath(Path.Combine("..","workspaces", job.Id.ToString()));
+            var workspace = Path.GetFullPath(Path.Combine("..", "workspaces", job.Id.ToString()));
             Directory.CreateDirectory(workspace);
 
-            var (code, logs) = await ProcessRunner.RunAsync(
+            var (code, logs, cloneTimedOut) = await ProcessRunner.RunAsync(
                 "git",
                 $"clone --depth 1 --single-branch --no-tags {job.RepositoryUrl} .",
                 workspace,
@@ -54,7 +53,16 @@ public class Worker : BackgroundService
             );
 
             job.Logs = logs;
-            
+
+            if (cloneTimedOut)
+            {
+                job.Status = JobStatus.Failed;
+                job.Logs += "\nExecution timeout during clone.";
+                await db.SaveChangesAsync(stoppingToken);
+                _logger.LogInformation("Clone timeout: {Id}", job.Id);
+                continue;
+            }
+
             if (code != 0)
             {
                 job.Status = JobStatus.Failed;
@@ -80,22 +88,38 @@ public class Worker : BackgroundService
 
             _logger.LogInformation("Building .NET project: {Id}", job.Id);
 
-            var (restoreCode, restoreLogs) = await ProcessRunner.RunAsync(
+            var (restoreCode, restoreLogs, restoreTimedOut) = await ProcessRunner.RunAsync(
                 "dotnet",
                 "restore",
                 workspace,
                 stoppingToken
             );
 
-            var (buildCode, buildLogs) = await ProcessRunner.RunAsync(
+            if (restoreTimedOut)
+            {
+                job.Status = JobStatus.Failed;
+                job.Logs += "\nExecution timeout during restore.";
+                await db.SaveChangesAsync(stoppingToken);
+                continue;
+            }
+
+            var (buildCode, buildLogs, buildTimedOut) = await ProcessRunner.RunAsync(
                 "dotnet",
                 "build --no-restore",
                 workspace,
                 stoppingToken
             );
 
+            if (buildTimedOut)
+            {
+                job.Status = JobStatus.Failed;
+                job.Logs += "\nExecution timeout during build.";
+                await db.SaveChangesAsync(stoppingToken);
+                continue;
+            }
+
             job.Logs += "\n--- RESTORE ---\n" + restoreLogs;
-            job.Logs += "\n--- BUILD ---\n" +buildLogs;
+            job.Logs += "\n--- BUILD ---\n" + buildLogs;
 
             if (buildCode != 0)
             {
@@ -108,14 +132,22 @@ public class Worker : BackgroundService
             job.Status = JobStatus.Testing;
             await db.SaveChangesAsync(stoppingToken);
 
-            _logger.LogInformation("Running test: {Id}", job.Id);
+            _logger.LogInformation("Running tests: {Id}", job.Id);
 
-            var (testCode, testLogs) = await ProcessRunner.RunAsync(
+            var (testCode, testLogs, testTimedOut) = await ProcessRunner.RunAsync(
                 "dotnet",
                 "test --no-build --verbosity normal",
                 workspace,
                 stoppingToken
             );
+
+            if (testTimedOut)
+            {
+                job.Status = JobStatus.Failed;
+                job.Logs += "\nExecution timeout during tests.";
+                await db.SaveChangesAsync(stoppingToken);
+                continue;
+            }
 
             job.Logs += "\n--- TEST ---\n" + testLogs;
 
@@ -126,9 +158,10 @@ public class Worker : BackgroundService
             }
 
             job.Status = testCode == 0 ? JobStatus.Completed : JobStatus.Failed;
+
             await db.SaveChangesAsync(stoppingToken);
 
-            _logger.LogInformation("Tests finished: {ID} (exit {Code})", job.Id, testCode);
+            _logger.LogInformation("Tests finished: {Id} (exit {Code})", job.Id, testCode);
         }
     }
 }
